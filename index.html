@@ -624,7 +624,7 @@
     /* ─── Print ───────────────────────────────────────────────────── */
     @media print {
       * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-      .app-header, .sidebar, .preview-top, .admin-db-section,
+      .app-header, .sidebar, .preview-top, #admin-db-section,
       .admin-search-section, .user-panel-section { display:none !important; }
       body, html { background: white !important; margin:0; padding:0; }
       #page-app  { display:block !important; padding:0; }
@@ -881,11 +881,17 @@
         <div id="error-area"></div>
       </aside>
 
-      <!-- PREVIEW AREA -->
+    <!-- PREVIEW AREA -->
       <section class="preview-area">
         <div class="preview-top">
           <span class="preview-lbl">Preview</span>
-          <span class="preview-size">A4 SIZE (210mm × 297mm)</span>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <button class="btn-print" id="preview-print-btn" onclick="window.print()" style="margin:0;padding:8px 16px;width:auto;font-size:.7rem;" disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              Print
+            </button>
+            <span class="preview-size">A4 SIZE (210mm × 297mm)</span>
+          </div>
         </div>
         <div id="preview-container">
           <div id="preview-empty" class="preview-empty">
@@ -1588,6 +1594,9 @@ function handleEmployeeClick(emp) {
   setTimeout(() => {
     formData = emp;
     renderDocPreview(emp);
+    // Enable print button in preview area when employee is selected
+    const previewPrintBtn = $('preview-print-btn');
+    if (previewPrintBtn) previewPrintBtn.disabled = false;
     if (currentUser && currentUser.role === 'user') $('user-print-btn').disabled = false;
   }, 600);
   const si = $('search-input');
@@ -1628,6 +1637,9 @@ function showEmptyPreview() {
       <h3 class="empty-title">Ready to Generate</h3>
       <p class="empty-sub">Select a profile from the database to preview the official document.</p>
     </div>`;
+  // Disable print button when no employee is selected
+  const previewPrintBtn = $('preview-print-btn');
+  if (previewPrintBtn) previewPrintBtn.disabled = true;
 }
 
 function showLoadingPreview() {

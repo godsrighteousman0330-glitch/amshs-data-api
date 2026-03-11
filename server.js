@@ -109,6 +109,10 @@ const server = http.createServer(async (req, res) => {
       const r = await collection.insertOne(body.document || {});
       result = { insertedId: r.insertedId };
 
+    } else if (action === 'insertMany') {
+      const r = await collection.insertMany(body.documents || []);
+      result = { insertedCount: r.insertedCount };
+
     } else if (action === 'updateOne') {
       const r = await collection.updateOne(
         resolveIds(body.filter || {}),

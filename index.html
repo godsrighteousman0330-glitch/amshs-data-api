@@ -280,6 +280,28 @@
     /* ─── Main Layout ─────────────────────────────────────────────── */
     .app-main { max-width:1320px; margin:0 auto; padding:32px 24px; display:flex; flex-direction:column; gap:28px; }
 
+    /* ─── Section Navigation Dropdown ───────────────────────────── */
+    .section-nav-wrap { position:relative; }
+    .section-nav-select {
+      appearance:none; -webkit-appearance:none;
+      padding:10px 36px 10px 14px;
+      background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.1);
+      border-radius:var(--radius-md); color:var(--white); font-size:.8rem; font-weight:600;
+      cursor:pointer; outline:none; transition:border-color .2s, background .2s;
+      min-width:180px;
+    }
+    .section-nav-select:hover { background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.2); }
+    .section-nav-select:focus { border-color:var(--yellow); box-shadow:0 0 0 3px rgba(186,142,35,.15); }
+    .section-nav-select option { background:var(--surface); color:var(--white); padding:8px; }
+    .section-nav-arrow {
+      position:absolute; right:12px; top:50%; transform:translateY(-50%);
+      pointer-events:none; color:rgba(255,255,255,.4);
+    }
+    .section-nav-label {
+      font-size:.55rem; font-weight:700; text-transform:uppercase; letter-spacing:.15em;
+      color:rgba(255,255,255,.35); margin-bottom:6px; display:block;
+    }
+
     /* ─── Employee Database Panel (full-width) ───────────────────── */
     .db-panel { background:var(--white); border:1px solid rgba(0,0,0,.07); border-radius:var(--radius-xl); box-shadow:0 2px 16px rgba(0,0,0,.06); overflow:hidden; }
     .db-panel-head { padding:18px 24px; display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg,#1a1a1a 0%,#252525 100%); }
@@ -350,20 +372,6 @@
       display:flex; align-items:center; transition:background .2s; box-shadow:var(--shadow-yellow);
     }
     .search-submit:hover { background:var(--yellow-l); }
-
-    /* template selector */
-    .template-list { display:flex; flex-direction:column; gap:10px; }
-    .template-btn {
-      width:100%; display:flex; align-items:flex-start; gap:14px; padding:14px;
-      background:rgba(255,255,255,.6); border:1px solid rgba(0,0,0,.07);
-      border-radius:var(--radius-md); text-align:left; transition:all .2s;
-    }
-    .template-btn:hover { background:var(--white); border-color:rgba(0,0,0,.12); }
-    .template-btn.active { background:var(--white); border-color:var(--yellow); box-shadow:0 4px 20px rgba(186,142,35,.1), inset 0 0 0 1px var(--yellow); }
-    .tmpl-icon { padding:9px; border-radius:12px; background:rgba(0,0,0,.06); color:rgba(0,0,0,.3); transition:background .2s, color .2s; flex-shrink:0; }
-    .template-btn.active .tmpl-icon { background:var(--yellow); color:#000; }
-    .tmpl-name { font-size:.85rem; font-weight:700; color:#1A1A1A; line-height:1.2; }
-    .tmpl-desc { font-size:.65rem; text-transform:uppercase; letter-spacing:.1em; color:rgba(0,0,0,.35); font-weight:600; margin-top:3px; }
 
     /* user sidebar */
     .user-panel { background:var(--white); padding:24px; border-radius:var(--radius-xl); border:1px solid rgba(0,0,0,.06); box-shadow:0 2px 12px rgba(0,0,0,.04); }
@@ -863,11 +871,12 @@
           </div>
         </div>
 
+        <!-- Template Selector (hidden - only Employee Record template) -->
         <!-- Template Selector -->
-        <div>
+        <!-- <div>
           <div class="section-label">Select Template</div>
           <div class="template-list" id="template-list"></div>
-        </div>
+        </div> -->
 
         <div id="error-area"></div>
       </aside>
@@ -1146,10 +1155,6 @@ const LEAVE_TYPES = [
 const FORM_TYPES = [
   { id:'bio',       name:'Employee Record',   desc:'Personal background and achievements',
     icon:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>` },
-  { id:'company',   name:'Company Fact Sheet', desc:'Business details and key metrics',
-    icon:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>` },
-  { id:'executive', name:'Executive Profile',  desc:'Leadership experience and roles',
-    icon:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>` },
 ];
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1430,7 +1435,6 @@ function initApp() {
     $('btn-logout').style.display = 'none';
   }
 
-  renderTemplates();
   const leaveSel = $('ef-leave-type');
   leaveSel.innerHTML = '<option value="">None</option>' + LEAVE_TYPES.map(t=>`<option value="${t}">${t}</option>`).join('');
   renderEmpList();
@@ -1475,29 +1479,6 @@ on('logo-upload-input','change', e => {
   };
   r.readAsDataURL(file);
 });
-
-/* ═══════════════════════════════════════════════════════════════
-   TEMPLATES
-═══════════════════════════════════════════════════════════════ */
-function renderTemplates() {
-  const list = $('template-list');
-  list.innerHTML = FORM_TYPES.map(t => `
-    <button class="template-btn ${t.id===selectedType.id?'active':''}" data-tmpl="${t.id}">
-      <div class="tmpl-icon">${t.icon}</div>
-      <div>
-        <div class="tmpl-name">${t.name}</div>
-        <div class="tmpl-desc">${t.desc}</div>
-      </div>
-    </button>
-  `).join('');
-  list.querySelectorAll('.template-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      selectedType = FORM_TYPES.find(t=>t.id===btn.dataset.tmpl);
-      renderTemplates();
-      if (formData) renderDocPreview(formData);
-    });
-  });
-}
 
 /* ═══════════════════════════════════════════════════════════════
    EMPLOYEE LIST
@@ -1562,7 +1543,7 @@ window.handleEmployeeClick_byId = (id) => {
 /* ═══════════════════════════════════════════════════════════════
    GENERATE FORM DATA
 ═══════════════════════════════════════════════════════════════ */
-function generateFormData(emp, templateType) {
+function generateFormData(emp) {
   const usedTotal = usedLeaves(emp);
   const leftTotal = leftLeaves(emp);
   const personalSection = { title:'Personal Information', fields:[
@@ -1596,30 +1577,7 @@ function generateFormData(emp, templateType) {
     { label:'Remaining', value:`${leftTotal} Days` },
     ...leaveRecords.map(r=>({ label: r.type, value:`${r.days} Days Deducted` }))
   ]};
-  if (templateType === 'Employee Record') {
-    return { subtitle:'Employee Record', refNum:emp.employeeId, sections:[personalSection,employmentSection,govtSection,leaveSection] };
-  }
-  if (templateType === 'Company Fact Sheet') {
-    return { subtitle:'Company Fact Sheet', refNum:emp.employeeId, sections:[
-      { title:'Institution', fields:[
-        { label:'School Name', value:'Angelito M. Sarmiento High School' },
-        { label:'Type',        value:'Public Secondary School' },
-        { label:'Division',    value:'Schools Division Office' },
-        { label:'Region',      value:'Region III (Central Luzon)' },
-      ]},
-      employmentSection, govtSection,
-    ]};
-  }
-  return { subtitle:'Executive Profile', refNum:emp.employeeId, sections:[
-    personalSection,
-    { title:'Leadership Role', fields:[
-      { label:'Position',   value:emp.jobTitle },
-      { label:'Department', value:emp.department },
-      { label:'Since',      value:emp.hireDate },
-      { label:'Status',     value:'Active' },
-    ]},
-    govtSection, leaveSection,
-  ]};
+  return { subtitle:'Employee Record', refNum:emp.employeeId, sections:[personalSection,employmentSection,govtSection,leaveSection] };
 }
 
 /* ═══════════════════════════════════════════════════════════════

@@ -32,7 +32,7 @@ function parseBody(req) {
       try { resolve(JSON.parse(data || '{}')); }
       catch(e) { reject(e); }
     });
-    req.on('error', reject)
+    req.on('error', reject);
   });
 }
 

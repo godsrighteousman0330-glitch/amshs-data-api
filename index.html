@@ -2235,7 +2235,7 @@ const SEED_EMPLOYEES = [
   { lastName:"SHIAY", firstName:"Joshua", employeeId:"2026-0160", birthdate:"2005-09-28", age:20, gender:"M", jobTitle:"Watchman", email:"example.ex@gmail.com", phone:"9751234571", department:"Admin", hireDate:"15-Feb-26", tesda:"001-510", tin:"2300-1011", sss:"26-12345678-11", pagibig:"1234-5678-0131", gsis:"3-123-456-790", prc:"00-12351", role:"user", username:"joshua.shiay", password:"password123", availableLeaves:15, deductedLeaves:[] },
 ];
 
-async function forceSeed() {
+window.forceSeed = async function() {
   const btn = document.getElementById('btn-force-seed');
   if (btn) { btn.textContent = '⏳ Loading…'; btn.disabled = true; }
   await checkConnection();

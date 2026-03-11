@@ -15,7 +15,7 @@ if (!MONGO_URI) {
 // ── MongoDB client ───────────────────────────────────────────────────
 let client;
 async function getDb() {
-  if (!client || !client.topology?.isConnected()) {
+  if (!client) {
     client = new MongoClient(MONGO_URI);
     await client.connect();
     console.log('Connected to MongoDB Atlas');

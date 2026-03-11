@@ -682,7 +682,6 @@
     <div class="login-db-notice connecting" id="login-db-notice">
       <span id="login-db-text">⏳ Connecting to database…</span>
     </div>
-    <div style="text-align:center;margin-top:10px;"><button id="btn-force-seed" onclick="forceSeed()" style="background:transparent;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.4);font-size:.68rem;padding:6px 16px;border-radius:99px;cursor:pointer;font-family:inherit;">🔄 Load Employee Data</button></div>
     <div class="login-footer"><p>Authorized Personnel Only</p></div>
   </div>
 </div>
@@ -919,6 +918,12 @@
           <div class="m-form-group"><label class="m-label">Employee ID</label><input name="employeeId" id="ef-empid" class="m-input" required placeholder="2026-XXXX"/></div>
           <div class="m-form-group"><label class="m-label">Job Title</label><input name="jobTitle" id="ef-jobtitle" class="m-input" required placeholder="Teacher I"/></div>
           <div class="m-form-group"><label class="m-label">Department</label><input name="department" id="ef-dept" class="m-input" required placeholder="Math"/></div>
+          <div class="m-form-group"><label class="m-label">Role</label>
+            <select name="role" id="ef-role" class="m-select">
+              <option value="user">Basic User</option>
+              <option value="admin">Administrator</option>
+            </select>
+          </div>
           <div class="m-form-group"><label class="m-label">Email Address</label><input name="email" id="ef-email" class="m-input" type="email" required placeholder="name@school.edu.ph"/></div>
 
           <!-- Leave management (shown only in edit mode) -->
@@ -1335,6 +1340,27 @@ function applyLogo(src) {
   if (docLogo) docLogo.src = src;
 }
 
+async function loadLogoFromDB() {
+  try {
+    const result = await mongoRequest('getLogo', {});
+    if (result.logo) {
+      applyLogo(result.logo);
+    }
+  } catch(err) {
+    console.warn('Failed to load logo from DB:', err);
+  }
+}
+
+async function saveLogoToDB(logoData) {
+  try {
+    await mongoRequest('saveLogo', { logo: logoData });
+    showToast('School logo saved to Atlas ✓');
+  } catch(err) {
+    console.warn('Failed to save logo to DB:', err);
+    showToast('Logo saved locally only', 'error');
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    LOGIN
 ═══════════════════════════════════════════════════════════════ */
@@ -1437,7 +1463,16 @@ on('logo-upload-input','change', e => {
   const file = e.target.files?.[0];
   if (!file) return;
   const r = new FileReader();
-  r.onloadend = () => applyLogo(r.result);
+  r.onloadend = () => {
+    const logoData = r.result;
+    applyLogo(logoData);
+    // Save to MongoDB Atlas
+    if (dbConnected) {
+      saveLogoToDB(logoData);
+    } else {
+      showToast('Logo saved locally only (Atlas offline)', 'error');
+    }
+  };
   r.readAsDataURL(file);
 });
 
@@ -1831,6 +1866,7 @@ on('btn-add-emp','click', () => {
   $('ef-leave-divider').style.display = 'none';
   ['ef-firstname','ef-lastname','ef-empid','ef-jobtitle','ef-dept','ef-email']
     .forEach(id => $(id).value = '');
+  $('ef-role').value = 'user'; // Reset role to default
   openModal('modal-emp');
 });
 
@@ -1869,6 +1905,7 @@ on('emp-form','submit', async e => {
           employeeId:      $('ef-empid').value,
           jobTitle:        $('ef-jobtitle').value,
           department:      $('ef-dept').value,
+          role:            $('ef-role').value,
           email:           $('ef-email').value,
           availableLeaves: newAvail,
           deductedLeaves:  newDeducted,
@@ -1895,6 +1932,7 @@ on('emp-form','submit', async e => {
       // ── ADD ──
       const fn = $('ef-firstname').value;
       const ln = $('ef-lastname').value;
+      const selectedRole = $('ef-role').value;
       const newEmp = {
         firstName: fn, lastName: ln,
         employeeId: $('ef-empid').value,
@@ -1903,7 +1941,7 @@ on('emp-form','submit', async e => {
         email:      $('ef-email').value,
         birthdate:'', age:0, gender:'M', phone:'', hireDate:'',
         tesda:'', tin:'', sss:'', pagibig:'', gsis:'', prc:'',
-        role:'user',
+        role: selectedRole,
         username: `${fn.toLowerCase()}.${ln.toLowerCase()}`,
         password: 'password123',
         availableLeaves:15, deductedLeaves:[]
@@ -1942,6 +1980,7 @@ window.openEditModal = (id) => {
   $('ef-empid').value        = emp.employeeId;
   $('ef-jobtitle').value     = emp.jobTitle;
   $('ef-dept').value         = emp.department;
+  $('ef-role').value        = emp.role || 'user';
   $('ef-email').value        = emp.email;
   $('ef-avail-leaves').value = emp.availableLeaves;
   $('ef-deduct-amount').value = 0;
@@ -2280,6 +2319,8 @@ async function seedIfEmpty() {
 (async () => {
   await checkConnection();
   await seedIfEmpty();
+  // Load school logo from MongoDB
+  await loadLogoFromDB();
   if (!dbConnected) EMPLOYEES = SEED_EMPLOYEES.map(e => ({...e}));
 })();
 

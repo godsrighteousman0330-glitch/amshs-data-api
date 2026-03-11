@@ -4,7 +4,7 @@ const { MongoClient, ObjectId } = require('mongodb');
 // ── Config ──────────────────────────────────────────────────────────
 const PORT       = process.env.PORT || 8080;
 const API_KEY    = process.env.API_KEY || 'amshs-secret-key-2026';
-const MONGO_URI  = process.env.MONGODB_URI;
+const MONGO_URI  = process.env.MONGODB_URI || 'mongodb+srv://amshs_admin:F2nUZQPmML2SBjoA@cluster0.w6kopxy.mongodb.net/?appName=Cluster0' ;
 const DB_NAME    = process.env.DB_NAME || 'amshs_portal';
 
 if (!MONGO_URI) {
@@ -128,6 +128,22 @@ const server = http.createServer(async (req, res) => {
     } else if (action === 'aggregate') {
       const docs = await collection.aggregate(body.pipeline || []).toArray();
       result = { documents: docs };
+
+    } else if (action === 'getLogo') {
+      // Get school logo from settings collection
+      const settingsCollection = db.collection('settings');
+      const settings = await settingsCollection.findOne({ type: 'schoolLogo' });
+      result = { logo: settings ? settings.data : null };
+
+    } else if (action === 'saveLogo') {
+      // Save school logo to settings collection
+      const settingsCollection = db.collection('settings');
+      await settingsCollection.updateOne(
+        { type: 'schoolLogo' },
+        { $set: { type: 'schoolLogo', data: body.logo, updatedAt: new Date() } },
+        { upsert: true }
+      );
+      result = { success: true };
 
     } else {
       return send(res, 400, { error: `Unknown action: ${action}` });

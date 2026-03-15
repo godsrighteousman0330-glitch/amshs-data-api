@@ -940,6 +940,7 @@
             </select>
           </div>
           <div class="m-form-group"><label class="m-label">Email Address</label><input name="email" id="ef-email" class="m-input" type="email" required placeholder="name@school.edu.ph"/></div>
+          <div class="m-form-group"><label class="m-label">Hire Date</label><input name="hireDate" id="ef-hiredate" class="m-input" type="date" placeholder="DD-Mon-YY"/></div>
 
           <!-- Leave management (shown only in edit mode) -->
           <hr class="modal-divider" id="ef-leave-divider" style="display:none">
@@ -972,6 +973,9 @@
           </div>
 
           <button type="submit" class="btn-modal-submit" id="emp-form-submit">Register Employee</button>
+          <div id="ef-saved-msg" class="modal-span" style="display:none;text-align:center;padding:10px 0 2px;font-size:.85rem;font-weight:700;color:#10b981;letter-spacing:.05em;">
+            ✓ Changes saved successfully
+          </div>
         </div>
       </form>
     </div>
@@ -1127,6 +1131,9 @@
           <div class="m-form-group"><label class="m-label">PRC ID No.</label><input id="ps-prc" class="m-input" /></div>
 
           <button type="submit" class="btn-modal-submit modal-span" id="ps-submit-btn">Save Changes</button>
+          <div id="ps-saved-msg" class="modal-span" style="display:none;text-align:center;padding:10px 0 2px;font-size:.85rem;font-weight:700;color:#10b981;letter-spacing:.05em;">
+            ✓ Changes saved successfully
+          </div>
         </div>
       </form>
     </div>
@@ -1390,6 +1397,7 @@ on('login-form','submit', async e => {
   const user = EMPLOYEES.find(u => u.username === un && u.password === pw);
   if (user) {
     currentUser = user;
+    sessionStorage.setItem('amshs_session', user.employeeId);
     $('login-error').textContent = '';
     initApp();
     if (user.role === 'user') handleEmployeeClick(user);
@@ -1458,6 +1466,7 @@ on('pd-logout-btn','click', () => {
 });
 
 function doLogout() {
+  sessionStorage.removeItem('amshs_session');
   currentUser = null; formData = null;
   $('login-username').value = '';
   $('login-password').value = '';
@@ -1834,7 +1843,7 @@ on('btn-add-emp','click', () => {
   $('emp-form-submit').textContent    = 'Register Employee';
   $('ef-leave-section').style.display = 'none';
   $('ef-leave-divider').style.display = 'none';
-  ['ef-firstname','ef-lastname','ef-empid','ef-jobtitle','ef-dept','ef-email']
+  ['ef-firstname','ef-lastname','ef-empid','ef-jobtitle','ef-dept','ef-email','ef-hiredate']
     .forEach(id => $(id).value = '');
   $('ef-role').value = 'user'; // Reset role to default
   openModal('modal-emp');
@@ -1877,6 +1886,14 @@ on('emp-form','submit', async e => {
           department:      $('ef-dept').value,
           role:            $('ef-role').value,
           email:           $('ef-email').value,
+          hireDate:        (() => {
+            const v = $('ef-hiredate').value; // "YYYY-MM-DD"
+            if (!v) return cur.hireDate || '';
+            // Convert ISO → "DD-Mon-YY" display format used throughout the app
+            const d = new Date(v + 'T00:00:00');
+            const mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            return `${String(d.getDate()).padStart(2,'0')}-${mo[d.getMonth()]}-${String(d.getFullYear()).slice(-2)}`;
+          })(),
           availableLeaves: newAvail,
           deductedLeaves:  newDeducted,
         };
@@ -1909,7 +1926,14 @@ on('emp-form','submit', async e => {
         jobTitle:   $('ef-jobtitle').value,
         department: $('ef-dept').value,
         email:      $('ef-email').value,
-        birthdate:'', age:0, gender:'M', phone:'', hireDate:'',
+        birthdate:'', age:0, gender:'M', phone:'',
+        hireDate: (() => {
+          const v = $('ef-hiredate').value; // "YYYY-MM-DD"
+          if (!v) return '';
+          const d = new Date(v + 'T00:00:00');
+          const mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          return `${String(d.getDate()).padStart(2,'0')}-${mo[d.getMonth()]}-${String(d.getFullYear()).slice(-2)}`;
+        })(),
         tesda:'', tin:'', sss:'', pagibig:'', gsis:'', prc:'',
         role: selectedRole,
         username: `${fn.toLowerCase()}.${ln.toLowerCase()}`,
@@ -1932,9 +1956,23 @@ on('emp-form','submit', async e => {
   }
 
   renderEmpList();
-  closeModal('modal-emp');
-  btn.textContent = editingEmpId ? 'Save Changes' : 'Register Employee';
-  btn.disabled = false;
+
+  // Show "Saved" confirmation if this was an edit, then close
+  const efSavedMsg = $('ef-saved-msg');
+  if (editingEmpId && efSavedMsg) {
+    efSavedMsg.style.display = '';
+    btn.textContent = '✓ Saved';
+    setTimeout(() => {
+      closeModal('modal-emp');
+      btn.textContent = 'Save Changes';
+      btn.disabled = false;
+      efSavedMsg.style.display = 'none';
+    }, 1400);
+  } else {
+    closeModal('modal-emp');
+    btn.textContent = editingEmpId ? 'Save Changes' : 'Register Employee';
+    btn.disabled = false;
+  }
 });
 
 window.openEditModal = (id) => {
@@ -1952,6 +1990,16 @@ window.openEditModal = (id) => {
   $('ef-dept').value         = emp.department;
   $('ef-role').value        = emp.role || 'user';
   $('ef-email').value        = emp.email;
+  $('ef-hiredate').value     = emp.hireDate ? (() => {
+    // Convert stored "DD-Mon-YY" (e.g. "15-Feb-26") → "YYYY-MM-DD" for <input type="date">
+    const mo = {jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12'};
+    const m = emp.hireDate.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$/);
+    if (m) {
+      const yr = parseInt(m[3]) < 100 ? 2000 + parseInt(m[3]) : parseInt(m[3]);
+      return `${yr}-${mo[m[2].toLowerCase()]||'01'}-${String(m[1]).padStart(2,'0')}`;
+    }
+    return emp.hireDate; // fallback (already ISO or unknown format)
+  })() : '';
   $('ef-avail-leaves').value = emp.availableLeaves;
   $('ef-deduct-amount').value = 0;
   openModal('modal-emp');
@@ -2067,9 +2115,17 @@ on('profile-settings-form', 'submit', async e => {
   updateUserPanel();
   updateDropdownProfile();
   if (formData) renderDocPreview(currentUser);
-  closeModal('modal-profile-settings');
-  btn.textContent = 'Save Changes';
-  btn.disabled    = false;
+
+  // Show "Saved" confirmation inside the modal, then close after a moment
+  const savedMsg = $('ps-saved-msg');
+  if (savedMsg) { savedMsg.style.display = ''; }
+  btn.textContent = '✓ Saved';
+  setTimeout(() => {
+    closeModal('modal-profile-settings');
+    btn.textContent = 'Save Changes';
+    btn.disabled    = false;
+    if (savedMsg) { savedMsg.style.display = 'none'; }
+  }, 1400);
 });
 
 // Backdrop click to close
@@ -2292,6 +2348,22 @@ async function seedIfEmpty() {
   // Load school logo from MongoDB
   await loadLogoFromDB();
   if (!dbConnected) EMPLOYEES = SEED_EMPLOYEES.map(e => ({...e}));
+
+  // Restore session if user refreshed the page (only clear on explicit logout)
+  const savedId = sessionStorage.getItem('amshs_session');
+  if (savedId) {
+    // Re-fetch employees from DB so we have fresh data
+    if (dbConnected) await loadEmployees();
+    const user = EMPLOYEES.find(u => u.employeeId === savedId);
+    if (user) {
+      currentUser = user;
+      initApp();
+      if (user.role === 'user') handleEmployeeClick(user);
+    } else {
+      // Stored ID no longer exists — clear stale session
+      sessionStorage.removeItem('amshs_session');
+    }
+  }
 })();
 
 }); // end DOMContentLoaded

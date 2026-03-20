@@ -587,6 +587,73 @@
     }
     .btn-modal-submit:hover { background:var(--yellow-l); }
     .btn-modal-submit:active { transform:scale(.98); }
+    .btn-modal-submit.saved-state {
+      background: #059669 !important;
+      box-shadow: 0 8px 32px rgba(5,150,105,.25) !important;
+      transform: none !important;
+      cursor: default;
+    }
+
+    /* ─── Save Confirmation Popup ───────────────────────────────── */
+    #save-confirm-popup {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,.6);
+      backdrop-filter: blur(6px);
+      animation: fadeIn .18s ease both;
+    }
+    #save-confirm-popup.open { display: flex; }
+    .save-popup-box {
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: var(--radius-2xl);
+      padding: 40px 44px;
+      text-align: center;
+      box-shadow: 0 32px 80px rgba(0,0,0,.55);
+      animation: slideUp .22s ease both;
+      max-width: 340px;
+      width: 100%;
+    }
+    .save-popup-icon {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: rgba(5,150,105,.15);
+      border: 2px solid rgba(5,150,105,.35);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .save-popup-title {
+      font-family: var(--font-head);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 8px;
+    }
+    .save-popup-msg {
+      font-size: .82rem;
+      color: rgba(255,255,255,.45);
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .save-popup-btn {
+      padding: 13px 36px;
+      background: #059669;
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-lg);
+      font-family: var(--font-head);
+      font-size: .72rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .18em;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .save-popup-btn:hover { background: #047857; }
 
     /* leave details modal */
     .leave-detail-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px; }
@@ -973,9 +1040,10 @@
           </div>
 
           <button type="submit" class="btn-modal-submit" id="emp-form-submit">Register Employee</button>
-          <div id="ef-saved-msg" class="modal-span" style="display:none;text-align:center;padding:10px 0 2px;font-size:.85rem;font-weight:700;color:#10b981;letter-spacing:.05em;">
-            ✓ Changes saved successfully
-          </div>
+        </div>
+        <div id="ef-saved-msg" style="display:none;align-items:center;justify-content:center;gap:8px;padding:14px 0 2px;font-size:.85rem;font-weight:700;color:#10b981;letter-spacing:.03em;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Changes saved successfully
         </div>
       </form>
     </div>
@@ -1131,12 +1199,27 @@
           <div class="m-form-group"><label class="m-label">PRC ID No.</label><input id="ps-prc" class="m-input" /></div>
 
           <button type="submit" class="btn-modal-submit modal-span" id="ps-submit-btn">Save Changes</button>
-          <div id="ps-saved-msg" class="modal-span" style="display:none;text-align:center;padding:10px 0 2px;font-size:.85rem;font-weight:700;color:#10b981;letter-spacing:.05em;">
-            ✓ Changes saved successfully
-          </div>
+        </div>
+        <div id="ps-saved-msg" style="display:none;align-items:center;justify-content:center;gap:8px;padding:14px 0 2px;font-size:.85rem;font-weight:700;color:#10b981;letter-spacing:.03em;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Changes saved successfully
         </div>
       </form>
     </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     POPUP: SAVE CONFIRMATION
+═══════════════════════════════════════════════════════════════ -->
+<div id="save-confirm-popup">
+  <div class="save-popup-box">
+    <div class="save-popup-icon">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="save-popup-title">Changes successfully saved!</div>
+    <div class="save-popup-msg">Your changes have been saved and updated successfully.</div>
+    <button class="save-popup-btn" id="save-popup-ok">OK</button>
   </div>
 </div>
 
@@ -1205,6 +1288,18 @@ function showToast(msg, type='success', duration=2800) {
   t.textContent = msg;
   t.className = `show ${type}`;
   setTimeout(() => { t.className = ''; }, duration);
+}
+
+/* ─── Save Confirmation Popup ────────────────────────────────── */
+function showSavePopup(onClose) {
+  const popup = $('save-confirm-popup');
+  if (popup) popup.classList.add('open');
+  const okBtn = $('save-popup-ok');
+  const close = () => {
+    if (popup) popup.classList.remove('open');
+    if (typeof onClose === 'function') onClose();
+  };
+  if (okBtn) okBtn.onclick = close;
 }
 
 /* ─── DB Status ──────────────────────────────────────────────── */
@@ -1957,20 +2052,21 @@ on('emp-form','submit', async e => {
 
   renderEmpList();
 
-  // Show "Saved" confirmation if this was an edit, then close
+  // Show confirmation popup then close modal
   const efSavedMsg = $('ef-saved-msg');
-  if (editingEmpId && efSavedMsg) {
-    efSavedMsg.style.display = 'block';
+  if (editingEmpId) {
+    btn.classList.add('saved-state');
     btn.textContent = '✓ Saved';
-    setTimeout(() => {
+    showSavePopup(() => {
       closeModal('modal-emp');
+      btn.classList.remove('saved-state');
       btn.textContent = 'Save Changes';
       btn.disabled = false;
-      efSavedMsg.style.display = 'none';
-    }, 1400);
+      if (efSavedMsg) efSavedMsg.style.display = 'none';
+    });
   } else {
     closeModal('modal-emp');
-    btn.textContent = editingEmpId ? 'Save Changes' : 'Register Employee';
+    btn.textContent = 'Register Employee';
     btn.disabled = false;
   }
 });
@@ -2116,16 +2212,17 @@ on('profile-settings-form', 'submit', async e => {
   updateDropdownProfile();
   if (formData) renderDocPreview(currentUser);
 
-  // Show "Saved" confirmation inside the modal, then close after a moment
+  // Show confirmation popup then close modal
   const savedMsg = $('ps-saved-msg');
-  if (savedMsg) { savedMsg.style.display = 'block'; }
+  btn.classList.add('saved-state');
   btn.textContent = '✓ Saved';
-  setTimeout(() => {
+  showSavePopup(() => {
     closeModal('modal-profile-settings');
+    btn.classList.remove('saved-state');
     btn.textContent = 'Save Changes';
     btn.disabled    = false;
-    if (savedMsg) { savedMsg.style.display = 'none'; }
-  }, 1400);
+    if (savedMsg) savedMsg.style.display = 'none';
+  });
 });
 
 // Backdrop click to close

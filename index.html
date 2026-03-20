@@ -1960,7 +1960,7 @@ on('emp-form','submit', async e => {
   // Show "Saved" confirmation if this was an edit, then close
   const efSavedMsg = $('ef-saved-msg');
   if (editingEmpId && efSavedMsg) {
-    efSavedMsg.style.display = '';
+    efSavedMsg.style.display = 'block';
     btn.textContent = '✓ Saved';
     setTimeout(() => {
       closeModal('modal-emp');
@@ -2118,7 +2118,7 @@ on('profile-settings-form', 'submit', async e => {
 
   // Show "Saved" confirmation inside the modal, then close after a moment
   const savedMsg = $('ps-saved-msg');
-  if (savedMsg) { savedMsg.style.display = ''; }
+  if (savedMsg) { savedMsg.style.display = 'block'; }
   btn.textContent = '✓ Saved';
   setTimeout(() => {
     closeModal('modal-profile-settings');
